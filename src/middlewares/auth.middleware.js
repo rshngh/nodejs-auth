@@ -10,6 +10,7 @@ export const verifyToken = (req, res, next) => {
     return res.status(401).json("Unauthorized request!");
   }
 
+  //decode access token
   const decodedAccessToken = AccessTokenDecoder(accessToken);
 
   console.log("old access token", accessToken);
@@ -17,19 +18,24 @@ export const verifyToken = (req, res, next) => {
 
   const username = decodedAccessToken.data;
 
-  db.query(
-    "SELECT username FROM users WHERE username = ?",
-    [username],
-    async (error, results) => {
-      if (error) {
-        console.log("Error while fetching data!", error);
+  //check is token valid
+  try {
+    db.query(
+      "SELECT username FROM users WHERE username = ?",
+      [username],
+      async (error, results) => {
+        if (error) {
+          console.log("Error while fetching data!", error);
+        }
+        if (results.length > 0) {
+          req.username = results[0].username;
+          return next();
+        } else {
+          return res.status(401).json("Invalid access token.");
+        }
       }
-      if (results.length > 0) {
-        req.username = results[0].username;
-        return next();
-      } else {
-        return res.status(400).json("Invalid access token.");
-      }
-    }
-  );
+    );
+  } catch (error) {
+    return res.status(502).json("Could not verify!");
+  }
 };

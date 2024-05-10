@@ -1,12 +1,11 @@
 import { db } from "../../app.js";
 import bcrypt from "bcrypt";
 import {
-  AccessTokenDecoder,
   AccessTokenGenerator,
-  RefreshTokenDecoder,
   RefreshTokenGenerator,
 } from "../utils/JWTTokens.js";
 
+//options object for cookie
 const cookieOptions = {
   httpOnly: true,
   secure: true,
@@ -16,9 +15,6 @@ const cookieOptions = {
 //register controller
 export const userRegistration = (req, res) => {
   const { name, username, password, passwordConfirm } = req.body;
-
-  // if (!(name, username, password, passwordConfirm))
-  //   return res.status(409).json("All fields are mandatory");
 
   if (
     [name, username, password, passwordConfirm].some(
@@ -66,7 +62,7 @@ export const userRegistration = (req, res) => {
       }
     );
   } catch (error) {
-    return res.status(500).json("Internal server error!");
+    return res.status(502).json("Internal server error!");
   }
 };
 
@@ -80,55 +76,72 @@ export const userLogin = (req, res) => {
   }
 
   //check user exists or not, verify password and set cookies
-  db.query(
-    "SELECT username, password FROM users WHERE username = ?",
-    [username],
-    async (error, results) => {
-      if (error) {
-        console.log("Error while fetching data!", error);
-      }
-      if (results.length > 0) {
-        const isPasswordCorrect = await bcrypt.compare(
-          password,
-          results[0].password
-        );
-
-        if (isPasswordCorrect) {
-          const accessToken = AccessTokenGenerator(username);
-          const refreshToken = RefreshTokenGenerator(username);
-
-          return res
-            .status(200)
-            .cookie("accessToken", { accessToken }, cookieOptions)
-            .cookie("refreshToken", { refreshToken }, cookieOptions)
-            .json("Logged in successfully.");
+  try {
+    db.query(
+      "SELECT username, password FROM users WHERE username = ?",
+      [username],
+      async (error, results) => {
+        if (error) {
+          console.log("Error while fetching data!", error);
         }
-      } else {
-        res.status(400).json("User does not exist.");
+        if (results.length > 0) {
+          const isPasswordCorrect = await bcrypt.compare(
+            password,
+            results[0].password
+          );
+
+          if (isPasswordCorrect) {
+            const accessToken = AccessTokenGenerator(username);
+            const refreshToken = RefreshTokenGenerator(username);
+
+            return res
+              .status(200)
+              .cookie("accessToken", { accessToken }, cookieOptions)
+              .cookie("refreshToken", { refreshToken }, cookieOptions)
+              .json("Logged in successfully.");
+          }
+        } else {
+          res.status(400).json("User does not exist.");
+        }
       }
-    }
-  );
+    );
+  } catch (error) {
+    return res.status(502).json("Error while trying to login");
+  }
 };
 
+//logout controller
 export const userLogout = (req, res) => {
-  // db.query("DELETE FROM userToken WHERE token = ?", [username]);
   console.log("logged out", req.username);
-  res
-    .status(200)
-    .clearCookie("accessToken", cookieOptions)
-    .clearCookie("refreshToken", cookieOptions)
-    .json("Logged out successfully.");
+
+  try {
+    res
+      .status(200)
+      .clearCookie("accessToken", cookieOptions)
+      .clearCookie("refreshToken", cookieOptions)
+      .json("Logged out successfully.");
+  } catch (error) {
+    return res.status(502).json("Error while trying to log out!");
+  }
 };
 
+//token refresh controller
 export const refreshExistingTokens = (req, res) => {
   console.log("refresh token username", req.username);
-  const newAccessToken = AccessTokenGenerator(req.username);
-  res
-    .status(200)
-    .cookie("accessToken", { accessToken: newAccessToken }, cookieOptions)
-    .json("Access token refreshed succefully.");
+
+  //generate new access token and update cookie
+  try {
+    const newAccessToken = AccessTokenGenerator(req.username);
+    res
+      .status(200)
+      .cookie("accessToken", { accessToken: newAccessToken }, cookieOptions)
+      .json("Access token refreshed succefully.");
+  } catch (error) {
+    return res.status(502).json("Error while generating tokens!");
+  }
 };
 
+//dashsboard controller
 export const viewDashboard = (req, res) => {
   if (!req.username) {
     return res

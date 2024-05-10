@@ -13,6 +13,14 @@ app.use(cookieParser());
 
 console.log("port", process.env.PORT);
 
+//create table if does not exist
+const createTableQuery = `CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(20) NOT NULL,
+  username VARCHAR(20) NOT NULL UNIQUE,
+  password VARCHAR(200) NOT NULL
+);`;
+
 export const db = mysql.createConnection({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -27,6 +35,10 @@ db.connect((error) => {
     console.log(
       "Connection to database successful. Connected as id: " + db.threadId
     );
+    db.query(createTableQuery, function (err, result) {
+      if (err) throw err;
+      console.log("Created table successfully");
+    });
   }
 });
 
