@@ -7,12 +7,22 @@ import {
   RefreshTokenGenerator,
 } from "../utils/JWTTokens.js";
 
+const cookieOptions = {
+  httpOnly: true,
+  secure: true,
+  sameSite: "none",
+};
+
+//register controller
 export const userRegistration = (req, res) => {
   const { name, username, password, passwordConfirm } = req.body;
 
+  // if (!(name, username, password, passwordConfirm))
+  //   return res.status(409).json("All fields are mandatory");
+
   if (
     [name, username, password, passwordConfirm].some(
-      (field) => field.trim() === ""
+      (field) => field == undefined || field.trim() === ""
     )
   ) {
     return res.status(409).json("All fields are mandatory");
@@ -34,23 +44,22 @@ export const userRegistration = (req, res) => {
         if (results.length > 0) {
           return res.status(409).json("Username already exists.");
         }
-      }
-    );
 
-    //hash password and register user
-    const hashedPassword = async () => {
-      return await bcrypt.hash(password, 8);
-    };
+        //hash password and register user
+        const hashedPassword = await bcrypt.hash(password, 8);
+        console.log("hashedPassword", hashedPassword);
 
-    db.query(
-      "INSERT INTO users SET ?",
-      { name: name, username: username, password: hashedPassword },
-      (error, results) => {
-        if (error) {
-          console.log("Could not register user!", error);
-        } else {
-          return res.status(200).json("User registered successfully.");
-        }
+        db.query(
+          "INSERT INTO users SET ?",
+          { name: name, username: username, password: hashedPassword },
+          (error, results) => {
+            if (error) {
+              console.log("Could not register user!", error);
+            } else {
+              return res.status(200).json("User registered successfully.");
+            }
+          }
+        );
       }
     );
   } catch (error) {
@@ -58,9 +67,46 @@ export const userRegistration = (req, res) => {
   }
 };
 
+//login controller
 export const userLogin = (req, res) => {
-  res.send("login page");
+  const { username, password } = req.body;
+  console.log(username, password);
+
+  if (!username || !password || username.trim() === "") {
+    return res.status(400).json("Please enter username and password.");
+  }
+
+  db.query(
+    "SELECT username, password FROM users WHERE username = ?",
+    [username],
+    async (error, results) => {
+      if (error) {
+        console.log("Error while fetching data!", error);
+      }
+      if (results.length > 0) {
+        const isPasswordCorrect = await bcrypt.compare(
+          password,
+          results[0].password
+        );
+
+        if (isPasswordCorrect) {
+          const accessToken = AccessTokenGenerator(username);
+          const refreshToken = RefreshTokenGenerator(username);
+
+          return res
+            .status(200)
+            .cookie("accessToken", accessToken, cookieOptions)
+            .cookie("refreshToken", refreshToken, cookieOptions)
+            .json("Logged in successfully.");
+        }
+      } else {
+        console.log("User does not exist");
+        res.status(400).json("User does not exist.");
+      }
+    }
+  );
 };
+
 export const userLogout = (req, res) => {
   res.send("logout page");
 };
