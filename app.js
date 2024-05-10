@@ -1,12 +1,19 @@
 import express from "express";
 import "dotenv/config";
 import mysql from "mysql";
+import cookieParser from "cookie-parser";
 
 const app = express();
 
+app.use(express.urlencoded({ extended: false }));
+
+app.use(express.json());
+
+app.use(cookieParser());
+
 console.log("port", process.env.PORT);
 
-const db = mysql.createConnection({
+export const db = mysql.createConnection({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.DB_PASSWORD,

@@ -7,7 +7,7 @@ import {
 
 const router = express.Router();
 
-router.route("/register").get(userRegistration);
+router.route("/register").post(userRegistration);
 router.route("/login").get(userLogin);
 router.route("/logout").get(userLogout);
 
