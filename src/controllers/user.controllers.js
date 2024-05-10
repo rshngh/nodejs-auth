@@ -1,5 +1,11 @@
 import { db } from "../../app.js";
 import bcrypt from "bcrypt";
+import {
+  AccessTokenDecoder,
+  AccessTokenGenerator,
+  RefreshTokenDecoder,
+  RefreshTokenGenerator,
+} from "../utils/JWTTokens.js";
 
 export const userRegistration = (req, res) => {
   const { name, username, password, passwordConfirm } = req.body;
