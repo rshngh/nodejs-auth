@@ -48,10 +48,13 @@ export const userRegistration = (req, res) => {
         //hash password and register user
         const hashedPassword = await bcrypt.hash(password, 8);
         console.log("hashedPassword", hashedPassword);
-
         db.query(
           "INSERT INTO users SET ?",
-          { name: name, username: username, password: hashedPassword },
+          {
+            name: name,
+            username: username,
+            password: hashedPassword,
+          },
           (error, results) => {
             if (error) {
               console.log("Could not register user!", error);
@@ -76,6 +79,7 @@ export const userLogin = (req, res) => {
     return res.status(400).json("Please enter username and password.");
   }
 
+  //check user exists or not, verify password and set cookies
   db.query(
     "SELECT username, password FROM users WHERE username = ?",
     [username],
@@ -95,12 +99,11 @@ export const userLogin = (req, res) => {
 
           return res
             .status(200)
-            .cookie("accessToken", accessToken, cookieOptions)
-            .cookie("refreshToken", refreshToken, cookieOptions)
+            .cookie("accessToken", { accessToken }, cookieOptions)
+            .cookie("refreshToken", { refreshToken }, cookieOptions)
             .json("Logged in successfully.");
         }
       } else {
-        console.log("User does not exist");
         res.status(400).json("User does not exist.");
       }
     }
@@ -108,5 +111,30 @@ export const userLogin = (req, res) => {
 };
 
 export const userLogout = (req, res) => {
-  res.send("logout page");
+  // db.query("DELETE FROM userToken WHERE token = ?", [username]);
+  console.log("logged out", req.username);
+  res
+    .status(200)
+    .clearCookie("accessToken", cookieOptions)
+    .clearCookie("refreshToken", cookieOptions)
+    .json("Logged out successfully.");
+};
+
+export const refreshExistingTokens = (req, res) => {
+  console.log("refresh token username", req.username);
+  const newAccessToken = AccessTokenGenerator(req.username);
+  res
+    .status(200)
+    .cookie("accessToken", { accessToken: newAccessToken }, cookieOptions)
+    .json("Access token refreshed succefully.");
+};
+
+export const viewDashboard = (req, res) => {
+  if (!req.username) {
+    return res
+      .status(401)
+      .json("Access denied. Please login to access dashboard.");
+  }
+
+  return res.status(200).json(`Welcome to your dashboard ${req.username}`);
 };

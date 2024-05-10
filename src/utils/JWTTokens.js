@@ -12,10 +12,13 @@ export const RefreshTokenGenerator = (data) => {
   });
 };
 
-export const AccessTokenDecoder = (token) => {
+export const AccessTokenDecoder = (tokenObj) => {
+  const token = tokenObj.accessToken;
+
   return jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 };
 
-export const RefreshTokenDecoder = (token) => {
+export const RefreshTokenDecoder = (tokenObj) => {
+  const token = tokenObj.accessToken;
   return jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
 };
