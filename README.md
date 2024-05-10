@@ -33,24 +33,29 @@ API ENDPOINTS:
 
 eg: http://localhost:8000/user/register
 
-1. /user/register
+1. "/user/register"
+
    takes four arguments:
    name:VARCHAR,
    username:VARCHAR,
    password:VARCHAR,
    passwordConfirm:VARCHAR
 
-2. /user/login
+2. "/user/login"
+
    takes two arguments:
    username and password
 
-3. /user/logout
+3. "/user/logout"
+
    protected route, user needs to be logged in, requires cookie
 
-4. /user/refresh-access-token
+4. "/user/refresh-access-token"
+
    protected route, user needs to be logged in, requires cookie
 
-5. /user/dashboard
+5. "/user/dashboard"
+
    protected route, user needs to be logged in, requires cookie
 
 APPROACH:
